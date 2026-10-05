@@ -1,0 +1,55 @@
+name: Generate PRM
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target Environment"
+        required: true
+        type: choice
+        options:
+          - SIT
+          - UAT
+          - PROD
+
+jobs:
+
+  generate-prm:
+
+    runs-on: ubuntu-latest
+
+    environment: ${{ inputs.environment }}
+
+    steps:
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install envsubst
+        run: |
+          sudo apt-get update
+          sudo apt-get install gettext -y
+
+      - name: Generate PRM
+        env:
+          SRC_CONN: ${{ vars.SRC_CONN }}
+          TRG_CONN: ${{ vars.TRG_CONN }}
+          FOLDER: ${{ vars.FOLDER }}
+          WAREHOUSE: ${{ vars.WAREHOUSE }}
+
+        run: |
+
+          mkdir -p output
+
+          envsubst \
+          < prm/CUSTOMER_LOAD.prm.template \
+          > output/CUSTOMER_LOAD.prm
+
+          echo "Generated File Contents:"
+          cat output/CUSTOMER_LOAD.prm
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-prm
+          path: output/CUSTOMER_LOAD.prm
